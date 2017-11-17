@@ -65,9 +65,7 @@ app.use((req, res, next) => {
 
 app.use('/', index);
 app.use('/auth', authController);
-
-app.use(isLogged);
-app.use('/laundry', laundryController);
+app.use('/laundry',isLogged, laundryController);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
