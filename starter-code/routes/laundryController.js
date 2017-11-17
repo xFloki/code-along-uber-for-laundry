@@ -4,13 +4,8 @@ const User = require('../models/user');
 const LaundryPickup = require('../models/laundry-pickup');
 
 laundryController.get('/dashboard', (req, res, next) => {
-  let query;
-
-  if (req.session.currentUser.isLaunderer) {
-    query = { launderer: req.session.currentUser._id };
-  } else {
-    query = { user: req.session.currentUser._id };
-  }
+  const query = (req.session.currentUser.isLaunderer) ?
+    { launderer: req.session.currentUser._id } : { user: req.session.currentUser._id };
 
   LaundryPickup
     .find(query)
@@ -22,7 +17,6 @@ laundryController.get('/dashboard', (req, res, next) => {
         next(err);
         return;
       }
-
       res.render('laundry/dashboard', {
         pickups: pickupDocs
       });
