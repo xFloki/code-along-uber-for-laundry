@@ -6,13 +6,13 @@
       <h3> <%= oneUser.name %> </h3>
       <p> Fee: $<%= oneUser.fee %> </p>
 
-      <a href="/launderers/<%= oneUser._id %>">
+      <a href="/laundry/launderers/<%= oneUser._id %>">
         Schedule a Pickup
       </a>
     </li>
   <% }) %>
 </ul>
 
-<a href="/dashboard">
+<a href="/laundry/dashboard">
   Back to Dashboard
 </a>
