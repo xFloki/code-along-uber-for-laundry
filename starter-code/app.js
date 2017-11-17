@@ -8,10 +8,13 @@ const expressLayouts = require('express-ejs-layouts');
 const mongoose = require('mongoose');
 const session = require('express-session');
 const MongoStore = require('connect-mongo')(session);
+const isLogged = require('./middlewares/isLogged');
+
 
 
 const index = require('./routes/index');
-const authController = require('./routes/auth');
+const authController = require('./routes/authController');
+const laundryController = require('./routes/laundryController');
 
 const dbUrl = 'mongodb://localhost/uberlaundry';
 mongoose.connect(dbUrl)
@@ -62,6 +65,9 @@ app.use((req, res, next) => {
 
 app.use('/', index);
 app.use('/auth', authController);
+
+app.use(isLogged);
+app.use('/laundry', laundryController);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
