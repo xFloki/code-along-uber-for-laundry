@@ -1,9 +1,23 @@
 const express = require('express');
-const User = require('../models/user');
 const laundryController = express.Router();
+const User = require('../models/user');
+const LaundryPickup = require('../models/laundry-pickup');
 
 laundryController.get('/dashboard', (req, res) => {
   res.render('laundry/dashboard');
+});
+
+laundryController.get('/launderers', (req, res, next) => {
+  User.find({ isLaunderer: true })
+  .then( launderersList => {
+    res.render('laundry/launderers', {
+      launderers: launderersList
+    });
+  })
+  .catch(err => {
+    next(err);
+    return;
+  });
 });
 
 laundryController.post('/launderers', (req, res, next) => {
@@ -13,28 +27,48 @@ laundryController.post('/launderers', (req, res, next) => {
     isLaunderer: true
   };
 
-  User.findByIdAndUpdate(userId, laundererInfo, { new: true }, (err, theUser) => {
-    if (err) {
-      next(err);
-      return;
-    }
-
+  User.findByIdAndUpdate(userId, laundererInfo, { new: true })
+  .then( theUser => {
     req.session.currentUser = theUser;
-
     res.redirect('/laundry/dashboard');
+  })
+  .catch( err => {
+    next(err);
+    return;
   });
 });
 
-laundryController.get('/launderers', (req, res, next) => {
-  User.find({ isLaunderer: true }, (err, launderersList) => {
-    if (err) {
-      next(err);
-      return;
-    }
+laundryController.get('/launderers/:id', (req, res, next) => {
+  const laundererId = req.params.id;
 
-    res.render('laundry/launderers', {
-      launderers: launderersList
+  User.findById(laundererId)
+  .then(theUser => {
+    res.render('laundry/launderer-profile', {
+      theLaunderer: theUser
     });
+  })
+  .catch(err => {
+    next(err);
+    return;
+  });
+});
+
+laundryController.post('/laundry-pickups', (req, res, next) => {
+  const pickupInfo = {
+    pickupDate: req.body.pickupDate,
+    launderer: req.body.laundererId,
+    user: req.session.currentUser._id
+  };
+
+  const thePickup = new LaundryPickup(pickupInfo);
+
+  thePickup.save()
+  .then(() => {
+    res.redirect('/laundry/dashboard');
+  })
+  .catch(err => {
+    next(err);
+    return;
   });
 });
 

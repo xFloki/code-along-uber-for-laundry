@@ -11,50 +11,40 @@ authController.get('/signup', (req,res) => {
 });
 
 authController.post('/signup', (req, res, next) => {
-  const nameInput = req.body.name;
-  const emailInput = req.body.email;
-  const passwordInput = req.body.password;
+  const {name, email, password} = req.body;
 
-  if (emailInput === '' || passwordInput === '') {
+  if (email === '' || password === '') {
     res.render('auth/signup', {
       errorMessage: 'Enter both email and password to sign up.'
     });
     return;
   }
 
-  User.findOne({ email: emailInput }, '_id', (err, existingUser) => {
-    if (err) {
-      next(err);
-      return;
-    }
-
-    if (existingUser !== null) {
-      res.render('auth/signup', {
-        errorMessage: `The email ${emailInput} is already in use.`
-      });
-      return;
-    }
-
+  User.findOne({email}, '_id')
+  .then(existingUser => {
+    if (existingUser !== null) throw new Error (`The email ${email} is already in use.`);
     const salt = bcrypt.genSaltSync(bcryptSalt);
-    const hashedPass = bcrypt.hashSync(passwordInput, salt);
+    const hashedPass = bcrypt.hashSync(password, salt);
 
     const userSubmission = {
-      name: nameInput,
-      email: emailInput,
+      name,
+      email,
       password: hashedPass
     };
 
     const theUser = new User(userSubmission);
 
-    theUser.save((err) => {
-      if (err) {
-        res.render('auth/signup', {
-          errorMessage: 'Something went wrong. Try again later.'
-        });
-        return;
-      }
-
+    theUser.save()
+    .then(() => {
       res.redirect('/');
+    })
+    .catch(e => {
+      throw new Error('Something went wrong. Try again later.')
+    });
+  })
+  .catch(e => {
+    res.render('auth/signup', {
+      errorMessage: e.message,
     });
   });
 });
@@ -66,33 +56,29 @@ authController.get('/login', (req, res, next) => {
 });
 
 authController.post('/login', (req, res, next) => {
-  const emailInput = req.body.email;
-  const passwordInput = req.body.password;
+  const {email,password} = req.body;
 
-  if (emailInput === '' || passwordInput === '') {
+  if (email === '' || password=== '') {
     res.render('auth/login', {
       errorMessage: 'Enter both email and password to log in.'
     });
     return;
   }
 
-  User.findOne({ email: emailInput }, (err, theUser) => {
-    if (err || theUser === null) {
-      res.render('auth/login', {
-        errorMessage: `There isn't an account with email ${emailInput}.`
-      });
-      return;
+  User.findOne({ email})
+  .then(user => {
+    if(!user) throw new Error(`There isn't an account with email ${email}.`);
+    if (bcrypt.compareSync(password, user.password)) {
+      req.session.currentUser = user;
+      res.redirect('/');
+    } else {
+      throw new Error('Invalid Password');
     }
-
-    if (!bcrypt.compareSync(passwordInput, theUser.password)) {
-      res.render('auth/login', {
-        errorMessage: 'Invalid password.'
-      });
-      return;
-    }
-
-    req.session.currentUser = theUser;
-    res.redirect('/');
+  })
+  .catch(e => {
+    return res.render('auth/login', {
+      errorMessage: e.message,
+    });
   });
 });
 
